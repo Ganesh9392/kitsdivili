@@ -2,7 +2,6 @@ import { useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   ArrowDown,
-  ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
   BookOpen,
@@ -26,8 +25,13 @@ import libraryStudents from "@/assets/kits-library-students.webp.asset.json";
 import studyImage from "@/assets/kits-students-study.webp.asset.json";
 import logoAsset from "@/assets/kits-logo.webp.asset.json";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createAdmissionEmail } from "@/lib/admissions";
 
@@ -103,6 +107,7 @@ const gallery = [
 
 function HomePage() {
   const [activeProgram, setActiveProgram] = useState<keyof typeof programmeGroups>("Undergraduate · B.Tech");
+  const [programmesMenuOpen, setProgrammesMenuOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<(typeof gallery)[number] | null>(null);
   const [formMessage, setFormMessage] = useState("");
@@ -131,7 +136,7 @@ function HomePage() {
       <div className="border-b border-border bg-ink text-primary-foreground">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-1 px-5 py-2 text-xs sm:px-8">
           <p>Autonomous · Divili, Andhra Pradesh</p>
-          <a className="inline-flex items-center gap-2 transition-colors hover:text-kits-gold" href="tel:+919010345695">
+          <a className="inline-flex items-center gap-2 transition-colors hover:text-kits-gold" href="tel:+919010344441">
             <Phone aria-hidden="true" className="size-3.5" /> Admissions: +91 90103 44441
           </a>
         </div>
@@ -151,14 +156,30 @@ function HomePage() {
 
           <nav aria-label="Main navigation" className="hidden items-center gap-7 lg:flex">
             {navigation.map((item) => (
-              <a
-                className="group inline-flex items-center gap-1 py-3 text-[13px] font-medium text-foreground/85 transition-colors hover:text-kits-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                href={item.href}
-                key={item.label}
-              >
-                {item.label}
-                {item.menu && <ChevronDown aria-hidden="true" className="size-3 transition-transform group-hover:rotate-180" />}
-              </a>
+              item.menu ? (
+                <Button
+                  aria-controls="programmes-menu"
+                  aria-expanded={programmesMenuOpen}
+                  className="group h-auto gap-1 px-0 py-3 text-[13px] font-medium text-foreground/85 hover:bg-transparent hover:text-kits-red"
+                  key={item.label}
+                  onClick={() => setProgrammesMenuOpen(!programmesMenuOpen)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") setProgrammesMenuOpen(false);
+                  }}
+                  variant="ghost"
+                >
+                  {item.label}<ChevronDown aria-hidden="true" className={`size-3 transition-transform ${programmesMenuOpen ? "rotate-180" : ""}`} />
+                </Button>
+              ) : (
+                <a
+                  className="inline-flex items-center gap-1 py-3 text-[13px] font-medium text-foreground/85 transition-colors hover:text-kits-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  href={item.href}
+                  key={item.label}
+                  onClick={() => setProgrammesMenuOpen(false)}
+                >
+                  {item.label}
+                </a>
+              )
             ))}
           </nav>
 
@@ -179,6 +200,42 @@ function HomePage() {
             {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
           </Button>
         </div>
+        {programmesMenuOpen && (
+          <div className="absolute inset-x-0 top-full border-b border-border bg-background shadow-lg" id="programmes-menu" role="region" aria-label="Explore programmes">
+            <div className="mx-auto grid max-w-7xl gap-7 px-6 py-8 sm:grid-cols-3 sm:px-10">
+              {(Object.keys(programmeGroups) as (keyof typeof programmeGroups)[]).map((group) => (
+                <div key={group}>
+                  <button
+                    className="mb-3 inline-flex min-h-8 items-center gap-2 text-left text-xs font-semibold uppercase text-kits-red focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={() => {
+                      setActiveProgram(group);
+                      setProgrammesMenuOpen(false);
+                      document.getElementById("programmes")?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    type="button"
+                  >
+                    {group}<ArrowUpRight aria-hidden="true" className="size-3.5" />
+                  </button>
+                  <ul className="grid gap-2">
+                    {programmeGroups[group].slice(0, 4).map((programme) => (
+                      <li key={`${group}-${programme}`}>
+                        <a
+                          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                          href={`${officialHome}departments.html`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={() => setProgrammesMenuOpen(false)}
+                        >
+                          {programme}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {menuOpen && (
           <nav aria-label="Mobile navigation" className="border-t border-border bg-background px-5 py-3 lg:hidden">
             {navigation.map((item) => (
@@ -445,15 +502,18 @@ function HomePage() {
         </div>
       </footer>
 
-      {selectedPhoto && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-ink/95 p-5" role="dialog" aria-modal="true" aria-label={selectedPhoto.label} onClick={() => setSelectedPhoto(null)}>
-          <Button aria-label="Close photo" className="absolute right-5 top-5 border-primary-foreground/50 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" onClick={() => setSelectedPhoto(null)} size="icon" variant="outline"><X aria-hidden="true" /></Button>
-          <figure className="max-h-[90vh] max-w-6xl" onClick={(event) => event.stopPropagation()}>
-            <img className="max-h-[78vh] w-full object-contain" src={selectedPhoto.src} alt={selectedPhoto.alt} />
-            <figcaption className="pt-4 text-center font-display text-2xl text-primary-foreground">{selectedPhoto.label}</figcaption>
-          </figure>
-        </div>
-      )}
+      <Dialog open={Boolean(selectedPhoto)} onOpenChange={(open) => !open && setSelectedPhoto(null)}>
+        <DialogContent className="max-h-[95vh] max-w-6xl border-0 bg-ink p-5 text-primary-foreground sm:p-7">
+          <DialogTitle className="sr-only">{selectedPhoto?.label ?? "Campus photograph"}</DialogTitle>
+          <DialogDescription className="sr-only">{selectedPhoto?.alt ?? "KITS campus photograph"}</DialogDescription>
+          {selectedPhoto && (
+            <figure>
+              <img className="max-h-[78vh] w-full object-contain" src={selectedPhoto.src} alt={selectedPhoto.alt} />
+              <figcaption className="pt-4 text-center font-display text-2xl">{selectedPhoto.label}</figcaption>
+            </figure>
+          )}
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
